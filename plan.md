@@ -1,5 +1,4 @@
 ## Phase 1: Basic Structure (Core Properties & Methods)
-
 Goal: Create the foundation of the class, including initialization, forward propagation, and a basic training loop.
 🔹 Properties (Instance Variables)
 
@@ -14,7 +13,6 @@ Goal: Create the foundation of the class, including initialization, forward prop
     forward_propagation(self, X) → Computes activations for each layer and returns the final output.
 
 ## Phase 2: Adding Activation Functions
-
 Goal: Implement activation functions and use them in forward propagation.
 🔹 Additional Properties
 
@@ -27,7 +25,6 @@ Goal: Implement activation functions and use them in forward propagation.
     softmax(self, Z) → For multi-class classification.
 
 ## Phase 3: Implementing Backpropagation
-
 Goal: Enable the model to learn by adjusting weights based on errors.
 🔹 New Methods
 
