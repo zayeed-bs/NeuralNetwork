@@ -11,6 +11,9 @@ def der_sigmoid(z):
 def relu(z):
     return np.maximum(0, z)
 
+def der_relu(z):
+    return np.where(z>0, 1, 0)
+
 class NeuralNetwork:
     def forward_propagation(self, X):
         activations = {0: X.reshape(-1,1)}
@@ -36,19 +39,27 @@ class NeuralNetwork:
         m = len(X)
         grads = {"dW": {}, "dB": {}}
 
-        for l in range(L, 0, -1):
-            d_loss_d_aL = 2*(activations[l]-Y)
-            d_aL_d_zL = der_sigmoid(zs[l])
-            delta_L = (d_loss_d_aL * d_aL_d_zL.T).reshape(-1, m)
+        d_loss_d_aL = 2 * (activations[L] - Y)
 
-            dW_L = np.dot(delta_L, activations[l-1].T).reshape(-1,1) / m
-            dB_L = np.sum(delta_L, axis=1, keepdims=True) / m
+        for l in range(L, 0, -1):
+            d_aL_d_zL = der_sigmoid(zs[l]) if l == L else der_relu(zs[l])
+            delta_L = d_loss_d_aL * d_aL_d_zL
+
+            if l > 1:  # Don't compute for input layer
+                d_loss_d_aL = np.dot(self.weights[l].T, delta_L)
+
+            dW_L = np.dot(delta_L, activations[l-1].T) / m
+            dB_L = np.sum(delta_L, axis=1, keepdims=True).reshape(-1,1) / m
 
             grads["dW"][l] = dW_L
             grads["dB"][l] = dB_L
 
         return grads
 
+    def update_weights_biases(self, grad):
+        for l in range(1, len(self.layers)):
+            self.weights[l] = self.weights[l] - self.learning_rate * grad["dW"][l]
+            self.biases[l] = self.biases[l] - self.learning_rate * grad["dB"][l]
 
     def __init__(self, layers:list, learning_rate:float):
         # Initialize Properties
