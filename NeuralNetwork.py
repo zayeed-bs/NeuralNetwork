@@ -33,10 +33,11 @@ class NeuralNetwork:
         return y_pred, activations, zs
 
     def calculate_loss(self, Y, Y_pred):
+        Y = Y.reshape(self.layers[-1], -1)
         return np.mean((Y-Y_pred)**2)
 
     def backward_propagation(self, X, Y, activations:dict, zs):
-        Y = Y.reshape(1,-1)
+        Y = Y.reshape(self.layers[-1], -1)
         L = len(self.layers)-1
         m = X.shape[1] if len(X.shape) > 1 else 1
         grads = {"dW": {}, "dB": {}}
@@ -97,7 +98,7 @@ class NeuralNetwork:
                     self.update_weights_biases(grads)
 
                 # Convert collected predictions to a NumPy array
-                Y_pred = np.hstack(Y_pred_list)  # Ensures correct shape
+                Y_pred = np.concatenate(Y_pred_list, axis=1)
 
             else:  # Full-batch mode
                 for index in shuffle_ind:
@@ -111,7 +112,7 @@ class NeuralNetwork:
                 Y_pred = np.vstack(Y_pred_list)
 
             # Compute and store loss for the epoch
-            loss = self.calculate_loss(Y_pred, Y.reshape(1, -1))
+            loss = self.calculate_loss(Y.reshape(self.layers[-1], -1), Y_pred)
             print(f"Epoch {e + 1}, Loss: {loss}")
             debug_loss.append(loss)
 
