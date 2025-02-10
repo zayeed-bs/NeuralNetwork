@@ -1,7 +1,10 @@
 import NeuralNetwork
 import numpy as np
 
-nn = NeuralNetwork.NeuralNetwork([2,15,1], 1)
-activations, zs = nn.forward_propagation(np.array([0.8, 0.23]))
-grad = nn.backward_propagation({0: [23,2.3]}, np.array([0.555]), activations, zs)
-nn.update_weights_biases(grad)
+nn = NeuralNetwork.NeuralNetwork([1,2,1], 0.01)
+
+X_train = np.array([[0.1], [0.3], [0.5], [0.7], [0.9]])  # Inputs
+Y_train = 2 * X_train + np.random.randn(5, 1) * 0.1  # Outputs (y = 2x + noise)
+
+
+nn.train(X_train, Y_train, epochs=1000, mini_batch_size=2)

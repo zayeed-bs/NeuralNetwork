@@ -6,7 +6,7 @@ def sigmoid(z):
     return 1/(1 + np.exp(-z))
 
 def der_sigmoid(z):
-    return np.dot(sigmoid(z), (1-sigmoid(z)).T)
+    return sigmoid(z) * (1-sigmoid(z))
 
 def relu(z):
     return np.maximum(0, z)
@@ -16,27 +16,29 @@ def der_relu(z):
 
 class NeuralNetwork:
     def forward_propagation(self, X):
-        activations = {0: X.reshape(-1,1)}
+        activations = {0: X}
         zs = {}
 
         for l in range(1, len(self.layers)):
             z = np.dot(self.weights[l], activations[l-1]) + self.biases[l]
             zs[l] = z
 
-            if l == len(self.layers)-2:  # Output layer
+            if l == len(self.layers)-1:  # Output layer
                 activations[l] = sigmoid(z)  # For classification
             else:  # Hidden layers
                 activations[l] = relu(z)
 
-        return activations, zs
+        y_pred = activations[len(self.layers) - 1]
+
+        return y_pred, activations, zs
 
     def calculate_loss(self, Y, Y_pred):
         return np.mean((Y-Y_pred)**2)
 
     def backward_propagation(self, X, Y, activations:dict, zs):
-        Y = Y.reshape(-1,1)
+        Y = Y.reshape(1,-1)
         L = len(self.layers)-1
-        m = len(X)
+        m = X.shape[1] if len(X.shape) > 1 else 1
         grads = {"dW": {}, "dB": {}}
 
         d_loss_d_aL = 2 * (activations[L] - Y)
@@ -60,6 +62,64 @@ class NeuralNetwork:
         for l in range(1, len(self.layers)):
             self.weights[l] = self.weights[l] - self.learning_rate * grad["dW"][l]
             self.biases[l] = self.biases[l] - self.learning_rate * grad["dB"][l]
+
+
+    def train(self, X, Y, epochs=100, mini_batch_size=0):
+        dat_size = X.shape[0]
+
+        if Y.shape[0] != dat_size:
+            return 0
+
+        debug_loss = []
+
+        for e in range(epochs):
+            # Shuffle dataset
+            shuffle_ind = np.arange(dat_size)
+            np.random.shuffle(shuffle_ind)
+
+            Y_pred_list = []  # Store predictions across all batches
+
+            # Check if there are mini batches
+            if mini_batch_size:
+                shuffle_ind = np.array_split(shuffle_ind, dat_size // mini_batch_size)
+
+                for index in shuffle_ind:
+                    # Extract mini-batch and reshape correctly
+                    x = np.array([X[i] for i in index]).T
+                    y = np.array([Y[i] for i in index]).reshape(1, -1)  # Ensure (1, batch_size)
+
+                    # Forward propagation
+                    Y_pred_batch, activations, zs = self.forward_propagation(x)
+                    Y_pred_list.append(Y_pred_batch)
+
+                    # Backward propagation using Y_batch, NOT Y_pred
+                    grads = self.backward_propagation(x, y, activations, zs)
+                    self.update_weights_biases(grads)
+
+                # Convert collected predictions to a NumPy array
+                Y_pred = np.hstack(Y_pred_list)  # Ensures correct shape
+
+            else:  # Full-batch mode
+                for index in shuffle_ind:
+                    y, activations, zs = self.forward_propagation(X[index].reshape(-1, 1))
+                    Y_pred_list.append(y)
+
+                    x = np.atleast_2d(X[index]).T
+                    grads = self.backward_propagation(x, y, activations, zs)
+                    self.update_weights_biases(grads)
+
+                Y_pred = np.vstack(Y_pred_list)
+
+            # Compute and store loss for the epoch
+            loss = self.calculate_loss(Y_pred, Y.reshape(1, -1))
+            print(f"Epoch {e + 1}, Loss: {loss}")
+            debug_loss.append(loss)
+
+        plt.plot(debug_loss)
+        plt.xlabel("Epochs")
+        plt.ylabel("Loss")
+        plt.title("Training Loss Over Time")
+        plt.show()
 
     def __init__(self, layers:list, learning_rate:float):
         # Initialize Properties
